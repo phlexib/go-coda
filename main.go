@@ -4,18 +4,20 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-querystring/query"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"path"
+
+	"github.com/google/go-querystring/query"
 )
 
 type Client struct {
-	BaseURL    *url.URL
-	UserAgent  string
-	HttpClient *http.Client
+	BaseURL       *url.URL
+	UserAgent     string
+	HttpClient    *http.Client
+	Authorization string
 }
 
 type GetDocumentResponse struct {
@@ -38,6 +40,7 @@ type Document struct {
 }
 
 func (c *Client) apiCall(method, url string, body interface{}, response interface{}) error {
+
 	req, err := c.newRequest(method, url, body)
 	if err != nil {
 		return err
@@ -67,7 +70,12 @@ func (c *Client) newRequest(method, methodPath string, body interface{}) (*http.
 
 	if body != nil && method == "GET" {
 		queryParams, _ := query.Values(body)
-		u.RawQuery = queryParams.Encode()
+		cleanParams := url.Values{}
+		cleanParams.Add("query", queryParams.Get("Query"))
+		cleanParams.Add("sortBy", queryParams.Get("SortBy"))
+		cleanParams.Add("useColumnNames", queryParams.Get("UseColumnNames"))
+
+		u.RawQuery = cleanParams.Encode()
 	}
 
 	req, err := http.NewRequest(method, u.String(), buf)
@@ -80,11 +88,15 @@ func (c *Client) newRequest(method, methodPath string, body interface{}) (*http.
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgent)
+	if len(c.Authorization) > 0 {
+		req.Header.Set("Authorization", c.Authorization)
+	}
 
 	return req, nil
 }
 
 func (c *Client) do(req *http.Request, v interface{}) (*http.Response, error) {
+	fmt.Println(req.URL.RequestURI())
 	resp, err := c.HttpClient.Do(req)
 	if err != nil {
 		return nil, err

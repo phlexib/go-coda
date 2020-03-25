@@ -94,6 +94,16 @@ type ListViewRowsResponse struct {
 func (c *Client) ListTableRows(docId string, tableIdOrName string, listRowsParams ListRowsParameters) (ListRowsResponse, error) {
 	docPath := fmt.Sprintf("docs/%s/tables/%s/rows", docId, tableIdOrName)
 	var rowsResp ListRowsResponse
+
+	// var jsonData []byte
+	// jsonData, err := json.Marshal(listRowsParams)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	// fmt.Println(string(jsonData))
+	// var cleanParams interface{}
+	// json.Unmarshal(jsonData, &cleanParams)
+
 	err := c.apiCall("GET", docPath, listRowsParams, &rowsResp)
 	if err != nil {
 		log.Print("Unable to list table rows with error.")
